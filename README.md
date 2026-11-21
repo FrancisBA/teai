@@ -4,6 +4,8 @@
 
 `teai` is a self-contained browser app built around an "ambient resonance" idea. Instead of a chat box, it shows a slowly shifting field of light whose color, motion, and glow follow your current energy: voice level if you allow microphone access, plus your typing pace and idle time. When the field stays highly activated, it offers a single quiet nudge at the edge of the screen rather than a notification. Short phrases you type bloom into idea nodes with faint links between related thoughts.
 
+You can also record a named audio clip. Press **record**, speak, press **stop**, type a name in the box, and save it. Saved clips appear in the library for play/pause, renaming, downloading, or deletion. Typing is how recordings get named and remembered; there is no model training or transcription.
+
 It simulates the *feeling* of instant attunement. It does not read minds, sense thoughts, or experience empathy.
 
 ## How to use it
@@ -13,12 +15,15 @@ It simulates the *feeling* of instant attunement. It does not read minds, sense 
 3. Type naturally. Faster typing and frequent input warm the field toward amber; stillness lets it settle back to deep blue.
 4. Type a short phrase in the bottom field and press Enter to add an idea node. Nodes are kept for the current browser session via local storage.
 5. If the field stays intense for a few seconds, a brief whisper appears near the top right and fades on its own.
+6. Press **record** to start an audio clip, press **stop** when finished, then type a name in the naming box and press **save**. Empty or very long names are rejected.
+7. Use the library on the right to play, pause, download, rename, or delete saved clips. Recordings persist in this browser via IndexedDB.
 
 ## Notes
 
-- Everything runs locally in the browser. No accounts, API keys, downloads, network requests, or model files are needed.
-- Microphone audio is analyzed in the page and is never recorded, stored, or sent anywhere.
-- Requires a browser with Canvas 2D and Web Audio support.
+- Everything runs locally in the browser. No accounts, API keys, external downloads, network requests, or model files are needed.
+- Microphone audio is analyzed in the page. Audio is stored only when you explicitly record, name, and save a clip. Nothing is uploaded or sent anywhere.
+- Recordings use IndexedDB and stay in the current browser profile until deleted. Clearing site data removes them.
+- Requires a browser with Canvas 2D, Web Audio, MediaRecorder, and IndexedDB support.
 
 ## API
 
@@ -34,11 +39,17 @@ const score = updateScore({
   micLevel: 0.4,
   spectralCentroid: 0.3,
   typingRate: 3,
+  pointerRate: 1,
   idleMs: 0,
   previousScore: 0,
   dtMs: 600
 })
 console.log(score)
+
+const Rec = window.Recording
+console.log(Rec.validateName('  morning calm  '))
+console.log(Rec.chooseMimeType(['audio/webm;codecs=opus', 'audio/webm'], MediaRecorder.isTypeSupported))
+console.log(Rec.formatDuration(65000))
 ```
 
 ### Python
@@ -51,7 +62,8 @@ from pathlib import Path
 root = Path(".")
 html = (root / "index.html").read_text(encoding="utf-8")
 logic = (root / "resonance.js").read_text(encoding="utf-8")
-print("serverless" if "<canvas" in html and "TeaiResonance" in logic else "missing app files")
+recordings = (root / "recording.js").read_text(encoding="utf-8")
+print("serverless" if "<canvas" in html and "TeaiResonance" in logic and "Recording" in recordings else "missing app files")
 ```
 
 ### Curl
