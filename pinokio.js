@@ -5,7 +5,7 @@ module.exports = {
       default: true,
       icon: "fa-solid fa-wave-square",
       text: "teai",
-      href: "index.html"
+      href: "/asset/api/teai/index.html"
     }]
   }
 }

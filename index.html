@@ -359,8 +359,10 @@
     const speed = (.018 + state.score * .06) * soften
     for (let i = 0; i < 7; i++) {
       const radius = ((now * speed + i * maxRadius / 7) % maxRadius)
-      const alpha = (1 - radius / maxRadius) * (.04 + state.score * .1) * soften
-      ctx.strokeStyle = `hsla(${hue + i * 4}, 85%, 70%, ${alpha})`
+      const t = radius / maxRadius
+      const ring = R.ringColor(t)
+      const alpha = (0.25 + 0.75 * (1 - t)) * (.04 + state.score * .1) * soften
+      ctx.strokeStyle = `hsla(${ring.hue}, ${ring.saturation}%, ${ring.lightness}%, ${alpha})`
       ctx.lineWidth = 1 + state.score * 2
       ctx.beginPath()
       ctx.arc(width * .5, height * .48, radius, 0, Math.PI * 2)

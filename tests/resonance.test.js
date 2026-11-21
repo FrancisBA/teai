@@ -93,3 +93,20 @@ test('test_save_and_load_nodes_tolerate_storage_errors', () => {
   assert.equal(TeaiResonance.saveNodes([node], working), true)
   assert.deepEqual(TeaiResonance.loadNodes(working), [node])
 })
+
+test('test_ring_color_inner_is_brown', () => {
+  assert.deepEqual(TeaiResonance.ringColor(0), { hue: 24, saturation: 78, lightness: 30 })
+})
+
+test('test_ring_color_midpoint_is_green', () => {
+  assert.deepEqual(TeaiResonance.ringColor(0.5), { hue: 152, saturation: 78, lightness: 49 })
+})
+
+test('test_ring_color_outer_is_purple', () => {
+  assert.deepEqual(TeaiResonance.ringColor(1), { hue: 280, saturation: 78, lightness: 68 })
+})
+
+test('test_ring_color_clamps_out_of_range', () => {
+  assert.deepEqual(TeaiResonance.ringColor(-3), TeaiResonance.ringColor(0))
+  assert.deepEqual(TeaiResonance.ringColor(4), TeaiResonance.ringColor(1))
+})

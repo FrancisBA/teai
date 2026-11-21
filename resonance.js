@@ -1,6 +1,11 @@
 const TeaiResonance = (() => {
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
+  const ringColor = radiusRatio => {
+    const t = clamp(radiusRatio, 0, 1)
+    return { hue: 24 + t * 256, saturation: 78, lightness: 30 + t * 38 }
+  }
+
   const updateScore = ({ micLevel, spectralCentroid, typingRate, pointerRate, idleMs, previousScore, dtMs }) => {
     const mic = Number.isFinite(micLevel) ? clamp(micLevel * 3, 0, 1) : 0
     const centroid = Number.isFinite(spectralCentroid) ? clamp(spectralCentroid, 0, 1) : 0
@@ -75,7 +80,7 @@ const TeaiResonance = (() => {
     }
   }
 
-  return { updateScore, shouldNudge, makeNode, linkNodes, saveNodes, loadNodes }
+  return { updateScore, shouldNudge, makeNode, linkNodes, saveNodes, loadNodes, ringColor }
 })()
 
 if (typeof window !== 'undefined') {
