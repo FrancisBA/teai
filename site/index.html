@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>teai</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #04070f; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: #dfe9ff; }
+  #field { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #veil {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, transparent 30%, rgba(2,4,10,.72) 100%);
+  }
+  #tools { position: fixed; top: 24px; left: 26px; z-index: 6; display: flex; gap: 8px; }
+  .tool {
+    border: 1px solid rgba(190,215,255,.28); border-radius: 999px;
+    background: rgba(10,18,34,.35); color: #c9dcff;
+    padding: 8px 18px; font-size: 12px; letter-spacing: .18em; text-transform: lowercase;
+    cursor: pointer; backdrop-filter: blur(6px); transition: opacity .5s, border-color .5s;
+  }
+  .tool:hover { border-color: rgba(190,215,255,.6); }
+  #recordStatus, #recordError, #micDenied {
+    position: fixed; top: 64px; left: 28px; z-index: 6;
+    font-size: 11px; letter-spacing: .08em; color: rgba(226,236,255,.6);
+  }
+  #recordError, #micDenied { top: 84px; color: rgba(255,186,160,.8); }
+  #savePanel {
+    position: fixed; top: 108px; left: 26px; z-index: 7;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #clipName {
+    width: 220px; border: 0; border-bottom: 1px solid rgba(180,210,255,.35);
+    background: transparent; color: #e8f0ff; font-size: 13px; padding: 8px 2px; outline: 0;
+  }
+  #clipName::placeholder { color: rgba(200,218,255,.35); }
+  .mini {
+    border: 1px solid rgba(190,215,255,.25); border-radius: 999px;
+    background: rgba(10,18,34,.4); color: #c9dcff; font-size: 11px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  .mini:disabled { opacity: .35; cursor: not-allowed; }
+  #whisper {
+    position: fixed; top: 30px; right: 32px; z-index: 4;
+    font-size: 13px; font-style: italic; letter-spacing: .06em;
+    color: rgba(226,236,255,.72); opacity: 0; transition: opacity 1.2s ease;
+    text-align: right; max-width: 40vw;
+  }
+  #whisper.visible { opacity: 1; }
+  #nodeLayer { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+  .node {
+    position: absolute; transform: translate(-50%, -50%);
+    padding: 9px 15px; border-radius: 999px; white-space: nowrap;
+    font-size: 12px; letter-spacing: .04em; color: rgba(233,241,255,.9);
+    background: rgba(18,30,54,.5); border: 1px solid rgba(180,210,255,.22);
+    box-shadow: 0 0 30px rgba(96,150,255,.18); pointer-events: auto;
+    animation: bloom 1.4s cubic-bezier(.16,1,.3,1) both;
+    backdrop-filter: blur(5px);
+  }
+  @keyframes bloom {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(.55); filter: blur(6px); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+  }
+  #library {
+    position: fixed; top: 76px; right: 28px; z-index: 5;
+    width: min(300px, 42vw); max-height: 48vh; overflow-y: auto;
+    border-left: 1px solid rgba(180,210,255,.12); padding-left: 16px;
+  }
+  .library-title {
+    font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+    color: rgba(200,218,255,.4); margin-bottom: 12px;
+  }
+  .clip { margin-bottom: 14px; font-size: 11px; color: rgba(226,236,255,.75); }
+  .clip-name { font-size: 12px; color: rgba(233,241,255,.92); word-break: break-word; }
+  .clip-meta { color: rgba(200,218,255,.38); margin: 2px 0 5px; }
+  .clip-actions { display: flex; gap: 6px; }
+  .clip-actions button {
+    border: 0; background: transparent; color: rgba(190,215,255,.6);
+    font-size: 10px; letter-spacing: .1em; cursor: pointer; padding: 2px 4px;
+  }
+  .clip-actions button:hover { color: #e8f0ff; }
+  .empty { font-size: 11px; color: rgba(200,218,255,.28); }
+  #capture {
+    position: fixed; bottom: 34px; left: 50%; transform: translateX(-50%);
+    z-index: 5; width: min(520px, 82vw);
+  }
+  #phrase {
+    width: 100%; border: 0; outline: 0; background: transparent;
+    color: #e8f0ff; text-align: center; font-size: 15px;
+    letter-spacing: .08em; padding: 12px 0;
+    border-bottom: 1px solid rgba(180,210,255,.18);
+    transition: border-color .6s;
+  }
+  #phrase::placeholder { color: rgba(200,218,255,.32); }
+  #phrase:focus { border-color: rgba(180,210,255,.55); }
+  #hint {
+    position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 5; font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+    color: rgba(200,218,255,.24); pointer-events: none;
+  }
+  @media (max-width: 600px) {
+    #whisper { max-width: 55vw; font-size: 11px; }
+    #tools { top: 16px; left: 16px; }
+    #library { top: 140px; right: 14px; width: 56vw; max-height: 32vh; }
+    #savePanel { top: 136px; left: 16px; }
+    #clipName { width: 150px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div id="veil"></div>
+<div id="tools">
+  <button id="listen" class="tool" type="button">listen</button>
+  <button id="record" class="tool" type="button">record</button>
+  <button id="stop" class="tool" type="button" hidden>stop</button>
+</div>
+<div id="recordStatus" aria-live="polite"></div>
+<div id="recordError" aria-live="polite"></div>
+<div id="micDenied" hidden>Microphone access is required to record</div>
+<div id="savePanel" hidden>
+  <input id="clipName" type="text" maxlength="80" placeholder="name this recording" aria-label="name this recording">
+  <button id="saveClip" class="mini" type="button" disabled>save</button>
+  <button id="discardClip" class="mini" type="button">discard</button>
+</div>
+<div id="whisper" aria-live="polite"></div>
+<div id="nodeLayer"></div>
+<section id="library" aria-label="library">
+  <div class="library-title">library</div>
+  <div id="clipList"></div>
+</section>
+<form id="capture" autocomplete="off">
+  <input id="phrase" type="text" placeholder="a thought, softly" aria-label="a thought, softly">
+</form>
+<div id="hint">type a thought &middot; press enter</div>
+<script src="resonance.js"></script>
+<script src="recording.js"></script>
+<script>
+(() => {
+  const R = window.TeaiResonance
+  const Rec = window.Recording
+  const canvas = document.getElementById('field')
+  const ctx = canvas.getContext('2d')
+  const listenButton = document.getElementById('listen')
+  const recordButton = document.getElementById('record')
+  const stopButton = document.getElementById('stop')
+  const recordStatus = document.getElementById('recordStatus')
+  const recordError = document.getElementById('recordError')
+  const micDenied = document.getElementById('micDenied')
+  const savePanel = document.getElementById('savePanel')
+  const clipName = document.getElementById('clipName')
+  const saveClipButton = document.getElementById('saveClip')
+  const discardClipButton = document.getElementById('discardClip')
+  const clipList = document.getElementById('clipList')
+  const whisper = document.getElementById('whisper')
+  const nodeLayer = document.getElementById('nodeLayer')
+  const form = document.getElementById('capture')
+  const phrase = document.getElementById('phrase')
+
+  const nudges = [
+    'soften your breath',
+    'let the pace ease',
+    'one thing at a time',
+    'room to breathe'
+  ]
+
+  const state = {
+    score: 0,
+    lastFrame: performance.now(),
+    lastInputAt: performance.now(),
+    lastNudgeAt: -100000,
+    nudgeUntil: 0,
+    highSince: null,
+    sequence: 0,
+    nodes: [],
+    audio: null,
+    stream: null,
+    recorder: null,
+    chunks: [],
+    recordStartedAt: 0,
+    recordTimer: null,
+    pending: null,
+    clips: [],
+    activeAudio: null,
+    activeUrl: null,
+    activeId: null,
+    activeButton: null,
+    keyTimes: [],
+    pointerTimes: []
+  }
+
+  let width = 0
+  let height = 0
+  let ratio = 1
+
+  function resize() {
+    ratio = Math.min(window.devicePixelRatio || 1, 2)
+    width = window.innerWidth
+    height = window.innerHeight
+    canvas.width = Math.floor(width * ratio)
+    canvas.height = Math.floor(height * ratio)
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+  }
+
+  function showRecordError(message) {
+    recordError.textContent = message
+    window.setTimeout(() => {
+      if (recordError.textContent === message) recordError.textContent = ''
+    }, 6000)
+  }
+
+  function updateSaveState() {
+    saveClipButton.disabled = !Rec.validateName(clipName.value)
+  }
+
+  function attachAnalyser(stream) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext
+    const context = new AudioContext()
+    const analyser = context.createAnalyser()
+    analyser.fftSize = 1024
+    context.createMediaStreamSource(stream).connect(analyser)
+    state.audio = {
+      analyser,
+      timeData: new Uint8Array(analyser.fftSize),
+      freqData: new Uint8Array(analyser.frequencyBinCount)
+    }
+  }
+
+  async function getStream() {
+    if (state.stream) return state.stream
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('unsupported')
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    state.stream = stream
+    return stream
+  }
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('teai', 1)
+      request.onupgradeneeded = () => {
+        const db = request.result
+        if (!db.objectStoreNames.contains('recordings')) {
+          db.createObjectStore('recordings', { keyPath: 'id' })
+        }
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  function dbCall(mode, action) {
+    return openDb().then(db => new Promise((resolve, reject) => {
+      const tx = db.transaction('recordings', mode)
+      const request = action(tx.objectStore('recordings'))
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+      tx.oncomplete = () => db.close()
+    }))
+  }
+
+  function readAudio(now) {
+    if (!state.audio) return { micLevel: null, spectralCentroid: null }
+    const { analyser, timeData, freqData } = state.audio
+    analyser.getByteTimeDomainData(timeData)
+    analyser.getByteFrequencyData(freqData)
+    let energy = 0
+    for (let i = 0; i < timeData.length; i++) {
+      const sample = (timeData[i] - 128) / 128
+      energy += sample * sample
+    }
+    const micLevel = Math.sqrt(energy / timeData.length)
+    let weighted = 0
+    let total = 0
+    for (let i = 0; i < freqData.length; i++) {
+      weighted += i * freqData[i]
+      total += freqData[i]
+    }
+    const spectralCentroid = total > 0 ? (weighted / total) / freqData.length : 0
+    return { micLevel, spectralCentroid }
+  }
+
+  function markKey() {
+    state.keyTimes.push(performance.now())
+    state.lastInputAt = performance.now()
+  }
+
+  function markPointer() {
+    state.pointerTimes.push(performance.now())
+    state.lastInputAt = performance.now()
+  }
+
+  function showWhisper(text, now) {
+    whisper.textContent = text
+    whisper.classList.add('visible')
+    state.nudgeUntil = now + 4000
+    window.setTimeout(() => whisper.classList.remove('visible'), 4000)
+  }
+
+  function renderNode(node) {
+    const element = document.createElement('div')
+    element.className = 'node'
+    element.textContent = node.text
+    element.style.left = `${node.x * 100}%`
+    element.style.top = `${node.y * 100}%`
+    element.dataset.id = node.id
+    nodeLayer.appendChild(element)
+  }
+
+  function addNode(text) {
+    const node = R.makeNode({ text, score: state.score, nowMs: Date.now(), sequence: state.sequence++ })
+    state.nodes.push(node)
+    renderNode(node)
+    R.saveNodes(state.nodes, localStorage)
+  }
+
+  function restoreNodes() {
+    const saved = R.loadNodes(localStorage)
+    for (const node of saved) {
+      state.sequence = Math.max(state.sequence, node.sequence + 1)
+      state.nodes.push(node)
+      renderNode(node)
+    }
+  }
+
+  function drawLinks() {
+    const links = R.linkNodes(state.nodes)
+    const byId = new Map(state.nodes.map(node => [node.id, node]))
+    ctx.lineWidth = 1
+    for (const link of links) {
+      const from = byId.get(link.from)
+      const to = byId.get(link.to)
+      if (!from || !to) continue
+      ctx.strokeStyle = `hsla(${210 - 175 * state.score}, 80%, 72%, .13)`
+      ctx.beginPath()
+      ctx.moveTo(from.x * width, from.y * height)
+      ctx.lineTo(to.x * width, to.y * height)
+      ctx.stroke()
+    }
+  }
+
+  function drawField(now) {
+    const hue = 210 - 175 * state.score
+    const soften = now < state.nudgeUntil ? .45 : 1
+    ctx.fillStyle = 'rgba(4,8,18,.2)'
+    ctx.fillRect(0, 0, width, height)
+
+    const glow = ctx.createRadialGradient(width * .5, height * .48, 0, width * .5, height * .48, Math.max(width, height) * .7)
+    glow.addColorStop(0, `hsla(${hue}, 72%, 34%, ${(.1 + state.score * .16) * soften})`)
+    glow.addColorStop(1, 'rgba(4,8,18,0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, width, height)
+
+    const maxRadius = Math.hypot(width, height) * .55
+    const speed = (.018 + state.score * .06) * soften
+    for (let i = 0; i < 7; i++) {
+      const radius = ((now * speed + i * maxRadius / 7) % maxRadius)
+      const t = radius / maxRadius
+      const ring = R.ringColor(t)
+      const alpha = (0.25 + 0.75 * (1 - t)) * (.04 + state.score * .1) * soften
+      ctx.strokeStyle = `hsla(${ring.hue}, ${ring.saturation}%, ${ring.lightness}%, ${alpha})`
+      ctx.lineWidth = 1 + state.score * 2
+      ctx.beginPath()
+      ctx.arc(width * .5, height * .48, radius, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+
+    for (let i = 0; i < 48; i++) {
+      const phase = i * 1.618
+      const drift = now * (.00008 + state.score * .00022)
+      const px = (Math.sin(phase + drift) * .5 + .5) * width
+      const py = (Math.cos(phase * .79 + drift * .73) * .5 + .5) * height
+      const size = .6 + state.score * 1.8
+      ctx.fillStyle = `hsla(${hue + 12}, 90%, 82%, ${(.06 + state.score * .24) * soften})`
+      ctx.beginPath()
+      ctx.arc(px, py, size, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    drawLinks()
+  }
+
+  function frame(now) {
+    const dt = Math.min(now - state.lastFrame, 100)
+    state.lastFrame = now
+
+    state.keyTimes = state.keyTimes.filter(time => now - time < 1000)
+    state.pointerTimes = state.pointerTimes.filter(time => now - time < 1000)
+    const audio = readAudio(now)
+    const idleMs = now - state.lastInputAt
+
+    state.score = R.updateScore({
+      micLevel: audio.micLevel,
+      spectralCentroid: audio.spectralCentroid,
+      typingRate: state.keyTimes.length,
+      pointerRate: state.pointerTimes.length,
+      idleMs,
+      previousScore: state.score,
+      dtMs: dt
+    })
+
+    if (state.score >= .5) {
+      if (state.highSince === null) state.highSince = now
+    } else {
+      state.highSince = null
+    }
+
+    if (R.shouldNudge({
+      score: state.score,
+      highSinceMs: state.highSince,
+      lastNudgeAtMs: state.lastNudgeAt,
+      nowMs: now
+    })) {
+      state.lastNudgeAt = now
+      showWhisper(nudges[Math.floor(Math.random() * nudges.length)], now)
+    }
+
+    drawField(now)
+    requestAnimationFrame(frame)
+  }
+
+  function makeAction(label, handler) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = label
+    button.addEventListener('click', handler)
+    return button
+  }
+
+  function stopPlayback() {
+    if (state.activeAudio) {
+      state.activeAudio.pause()
+      state.activeAudio = null
+    }
+    if (state.activeUrl) {
+      URL.revokeObjectURL(state.activeUrl)
+      state.activeUrl = null
+    }
+    if (state.activeButton) state.activeButton.textContent = 'play'
+    state.activeButton = null
+    state.activeId = null
+  }
+
+  function playClip(record, button) {
+    if (state.activeId === record.id && state.activeAudio) {
+      stopPlayback()
+      return
+    }
+    stopPlayback()
+    const url = URL.createObjectURL(record.blob)
+    const audio = new Audio(url)
+    audio.onended = () => {
+      if (state.activeAudio === audio) stopPlayback()
+    }
+    state.activeUrl = url
+    state.activeAudio = audio
+    state.activeId = record.id
+    state.activeButton = button
+    button.textContent = 'pause'
+    audio.play().catch(() => {
+      stopPlayback()
+      showRecordError('Playback could not start')
+    })
+  }
+
+  function downloadClip(record) {
+    const url = URL.createObjectURL(record.blob)
+    const link = document.createElement('a')
+    const extension = String(record.mimeType).includes('mp4') ? 'm4a' : 'webm'
+    link.href = url
+    link.download = `${record.name}.${extension}`
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  async function renameClip(record) {
+    const next = window.prompt('Rename recording', record.name)
+    const name = Rec.validateName(next)
+    if (!name) {
+      if (next !== null) showRecordError('Names must be 1 to 80 characters')
+      return
+    }
+    try {
+      await dbCall('readwrite', store => store.put({ ...record, name }))
+      await loadClips()
+    } catch (error) {
+      showRecordError('Could not rename the recording')
+    }
+  }
+
+  async function deleteClip(record) {
+    if (!window.confirm(`Delete "${record.name}"?`)) return
+    try {
+      stopPlayback()
+      await dbCall('readwrite', store => store.delete(record.id))
+      await loadClips()
+    } catch (error) {
+      showRecordError('Could not delete the recording')
+    }
+  }
+
+  function renderClips() {
+    clipList.replaceChildren()
+    if (!state.clips.length) {
+      const empty = document.createElement('div')
+      empty.className = 'empty'
+      empty.textContent = 'No recordings yet'
+      clipList.appendChild(empty)
+      return
+    }
+    for (const record of state.clips) {
+      const row = document.createElement('div')
+      row.className = 'clip'
+      const name = document.createElement('div')
+      name.className = 'clip-name'
+      name.textContent = record.name
+      const meta = document.createElement('div')
+      meta.className = 'clip-meta'
+      meta.textContent = `${Rec.formatDuration(record.durationMs)} · ${new Date(record.createdAt).toLocaleDateString()}`
+      const actions = document.createElement('div')
+      actions.className = 'clip-actions'
+      const playButton = makeAction('play', () => playClip(record, playButton))
+      actions.appendChild(playButton)
+      actions.appendChild(makeAction('download', () => downloadClip(record)))
+      actions.appendChild(makeAction('rename', () => renameClip(record)))
+      actions.appendChild(makeAction('delete', () => deleteClip(record)))
+      row.append(name, meta, actions)
+      clipList.appendChild(row)
+    }
+  }
+
+  async function loadClips() {
+    try {
+      const records = await dbCall('readonly', store => store.getAll())
+      state.clips = Rec.sortRecords(records || [])
+      renderClips()
+    } catch (error) {
+      showRecordError('Could not load recordings')
+    }
+  }
+
+  async function startRecording() {
+    if (state.recorder) return
+    if (state.pending) {
+      showRecordError('Save or discard the current recording first')
+      return
+    }
+    try {
+      const stream = await getStream()
+      if (!state.audio) attachAnalyser(stream)
+      if (typeof MediaRecorder === 'undefined') throw new Error('unsupported')
+      const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+      const supported = typeof MediaRecorder.isTypeSupported === 'function'
+        ? type => MediaRecorder.isTypeSupported(type)
+        : () => false
+      const mimeType = Rec.chooseMimeType(types, supported)
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+      state.recorder = recorder
+      state.chunks = []
+      state.recordStartedAt = performance.now()
+      recorder.ondataavailable = event => {
+        if (event.data && event.data.size) state.chunks.push(event.data)
+      }
+      recorder.onstop = () => {
+        state.pending = {
+          blob: new Blob(state.chunks, { type: recorder.mimeType || mimeType || 'audio/webm' }),
+          mimeType: recorder.mimeType || mimeType || 'audio/webm',
+          durationMs: performance.now() - state.recordStartedAt
+        }
+        state.recorder = null
+        window.clearInterval(state.recordTimer)
+        state.recordTimer = null
+        recordStatus.textContent = ''
+        recordButton.hidden = false
+        stopButton.hidden = true
+        savePanel.hidden = false
+        clipName.value = ''
+        updateSaveState()
+        clipName.focus()
+      }
+      recorder.start()
+      recordButton.hidden = true
+      stopButton.hidden = false
+      savePanel.hidden = true
+      recordStatus.textContent = `recording · ${Rec.formatDuration(0)}`
+      state.recordTimer = window.setInterval(() => {
+        recordStatus.textContent = `recording · ${Rec.formatDuration(performance.now() - state.recordStartedAt)}`
+      }, 500)
+    } catch (error) {
+      micDenied.hidden = false
+      showRecordError('Microphone access is required to record')
+    }
+  }
+
+  function stopRecording() {
+    if (state.recorder && state.recorder.state !== 'inactive') state.recorder.stop()
+  }
+
+  async function savePending() {
+    const name = Rec.validateName(clipName.value)
+    if (!name) {
+      showRecordError('Give the recording a name before saving')
+      return
+    }
+    if (!state.pending) return
+    const record = Rec.makeRecord({
+      id: `rec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      createdAt: Date.now(),
+      blob: state.pending.blob,
+      mimeType: state.pending.mimeType,
+      durationMs: state.pending.durationMs
+    })
+    if (!record) return
+    try {
+      await dbCall('readwrite', store => store.put(record))
+      state.pending = null
+      savePanel.hidden = true
+      await loadClips()
+    } catch (error) {
+      showRecordError('Could not save the recording')
+    }
+  }
+
+  function discardPending() {
+    state.pending = null
+    savePanel.hidden = true
+    clipName.value = ''
+    updateSaveState()
+    recordError.textContent = ''
+  }
+
+  listenButton.addEventListener('click', async () => {
+    try {
+      const stream = await getStream()
+      attachAnalyser(stream)
+      micDenied.hidden = true
+    } catch (error) {
+      state.audio = null
+      micDenied.hidden = false
+    }
+    listenButton.remove()
+  })
+
+  recordButton.addEventListener('click', startRecording)
+  stopButton.addEventListener('click', stopRecording)
+  saveClipButton.addEventListener('click', savePending)
+  discardClipButton.addEventListener('click', discardPending)
+  clipName.addEventListener('input', updateSaveState)
+
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && event.target === clipName) {
+      event.preventDefault()
+      savePending()
+      return
+    }
+    if (event.key === 'Enter' && event.target === phrase) return
+    markKey()
+  })
+
+  window.addEventListener('pointermove', () => {
+    if (state.pointerTimes.length && performance.now() - state.pointerTimes[state.pointerTimes.length - 1] < 90) return
+    markPointer()
+  })
+
+  form.addEventListener('submit', event => {
+    event.preventDefault()
+    const text = phrase.value.trim()
+    if (!text) return
+    addNode(text)
+    phrase.value = ''
+    markKey()
+  })
+
+  window.addEventListener('resize', resize)
+
+  resize()
+  restoreNodes()
+  loadClips()
+  requestAnimationFrame(frame)
+})()
+</script>
+</body>
+</html>
