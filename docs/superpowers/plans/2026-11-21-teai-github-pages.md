@@ -233,7 +233,8 @@ If GitHub reports the repo already exists, stop and ask the human partner before
 
 - [ ] **Step 3: Enable Pages workflow deployment**
 
-Run: `gh api --method PUT repos/FrancisBA/teai/pages --field build_type=workflow`
+Run: `gh api -X POST repos/FrancisBA/teai/pages -f build_type=workflow
+`
 Expected: Pages configured with build type `workflow`.
 
 - [ ] **Step 4: Wait for the first deployment**

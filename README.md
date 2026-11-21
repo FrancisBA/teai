@@ -18,6 +18,14 @@ It simulates the *feeling* of instant attunement. It does not read minds, sense 
 6. Press **record** to start an audio clip, press **stop** when finished, then type a name in the naming box and press **save**. Empty or very long names are rejected.
 7. Use the library on the right to play, pause, download, rename, or delete saved clips. Recordings persist in this browser via IndexedDB.
 
+## Hosted copy
+
+The hosted HTTPS copy is available at https://francisba.github.io/teai/. It works from any phone or browser with internet access. HTTPS is required for microphone access on mobile browsers.
+
+Notes and recordings stay in the browser and device where they were created; they are not synced across devices.
+
+To update the hosted copy: edit the root `index.html`, `resonance.js`, and `recording.js`, copy those three files into `site/`, then push to `main`. The GitHub Pages workflow deploys the `site/` folder automatically.
+
 ## Notes
 
 - Everything runs locally in the browser. No accounts, API keys, external downloads, network requests, or model files are needed.
