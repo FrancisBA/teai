@@ -24,7 +24,7 @@ The hosted HTTPS copy is available at https://francisba.github.io/teai/. It work
 
 Notes and recordings stay in the browser and device where they were created; they are not synced across devices.
 
-To update the hosted copy: edit the root `index.html`, `resonance.js`, and `recording.js`, copy those three files into `site/`, then push to `main`. The GitHub Pages workflow deploys the `site/` folder automatically.
+To update the hosted copy: edit the root `index.html`, `resonance.js`, and `recording.js`, run `node scripts/sync-site.js` locally to refresh `site/`, then push to `main`. The GitHub Pages workflow also runs the sync before tests and deployment.
 
 ## Notes
 
