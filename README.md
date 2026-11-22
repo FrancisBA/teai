@@ -17,6 +17,8 @@ It simulates the *feeling* of instant attunement. It does not read minds, sense 
 5. If the field stays intense for a few seconds, a brief whisper appears near the top right and fades on its own.
 6. Press **record** to start an audio clip, press **stop** when finished, then type a name in the naming box and press **save**. Empty or very long names are rejected.
 7. Use the library on the right to play, pause, download, rename, or delete saved clips. Recordings persist in this browser via IndexedDB.
+8. Delete one idea by clicking its `×`, or remove all of them at once with **clear ideas** in the top-left toolbar.
+9. Drag a pill to reposition it. Each idea keeps its own color across reloads.
 
 ## Hosted copy
 
@@ -31,6 +33,7 @@ To update the hosted copy: edit the root `index.html`, `resonance.js`, and `reco
 - Everything runs locally in the browser. No accounts, API keys, external downloads, network requests, or model files are needed.
 - Microphone audio is analyzed in the page. Audio is stored only when you explicitly record, name, and save a clip. Nothing is uploaded or sent anywhere.
 - Recordings use IndexedDB and stay in the current browser profile until deleted. Clearing site data removes them.
+- Idea positions and deletions persist in `localStorage` just like ideas already do, so the field comes back the way you left it.
 - Requires a browser with Canvas 2D, Web Audio, MediaRecorder, and IndexedDB support.
 
 ## API
