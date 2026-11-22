@@ -19,6 +19,7 @@ It simulates the *feeling* of instant attunement. It does not read minds, sense 
 7. Use the library on the right to play, pause, download, rename, or delete saved clips. Recordings persist in this browser via IndexedDB.
 8. Delete one idea by clicking its `×`, or remove all of them at once with **clear ideas** in the top-left toolbar.
 9. Drag a pill to reposition it. Each idea keeps its own color across reloads.
+10. After deleting or clearing ideas, press **undo** in the bottom-left toast to bring them back.
 
 ## Hosted copy
 

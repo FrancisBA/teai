@@ -88,7 +88,9 @@ const TeaiResonance = (() => {
 
   const moveNode = (nodes, id, x, y) => nodes.map(node => node.id === id ? { ...node, x: Number.isFinite(x) ? clamp(x, 0, 1) : node.x, y: Number.isFinite(y) ? clamp(y, 0, 1) : node.y } : node)
 
-  return { updateScore, shouldNudge, makeNode, linkNodes, saveNodes, loadNodes, ringColor, removeNode, clearNodes, moveNode, nodeHue }
+  const captureNodes = nodes => nodes.map(node => ({ ...node }))
+
+  return { updateScore, shouldNudge, makeNode, linkNodes, saveNodes, loadNodes, ringColor, removeNode, clearNodes, moveNode, nodeHue, captureNodes }
 })()
 
 if (typeof window !== 'undefined') {

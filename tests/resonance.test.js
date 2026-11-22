@@ -162,3 +162,22 @@ test('test_node_hue_is_stable_distinct_and_in_range', () => {
   assert.equal(new Set(hues).size, 360)
   assert.equal(TeaiResonance.nodeHue(-1), TeaiResonance.nodeHue(359))
 })
+
+test('test_capture_nodes_returns_a_new_array_and_new_node_objects', () => {
+  const nodes = [0, 1].map(sequence => TeaiResonance.makeNode({
+    text: `idea ${sequence}`, score: 0.5, nowMs: sequence * 1000, sequence
+  }))
+  const snapshot = TeaiResonance.captureNodes(nodes)
+  assert.notEqual(snapshot, nodes)
+  assert.notEqual(snapshot[0], nodes[0])
+  assert.deepEqual(snapshot, nodes)
+  snapshot[0].x = 0.9
+  assert.notEqual(nodes[0].x, 0.9)
+})
+
+test('test_capture_nodes_of_empty_array_returns_a_new_empty_array', () => {
+  const empty = []
+  const snapshot = TeaiResonance.captureNodes(empty)
+  assert.deepEqual(snapshot, [])
+  assert.notEqual(snapshot, empty)
+})

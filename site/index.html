@@ -28,6 +28,13 @@
     font-size: 11px; letter-spacing: .08em; color: rgba(226,236,255,.6);
   }
   #recordError, #micDenied { top: 84px; color: rgba(255,186,160,.8); }
+  #undoToast {
+    position: fixed; bottom: 24px; left: 26px; z-index: 8;
+    display: flex; align-items: center; gap: 10px; pointer-events: none;
+    font-size: 11px; color: rgba(226,236,255,.8);
+    background: rgba(10,18,34,.72); border-radius: 999px; padding: 8px 14px;
+  }
+  #undoButton { pointer-events: auto; }
   #savePanel {
     position: fixed; top: 108px; left: 26px; z-index: 7;
     display: flex; align-items: center; gap: 8px;
@@ -135,6 +142,10 @@
 </div>
 <div id="whisper" aria-live="polite"></div>
 <div id="nodeLayer"></div>
+<div id="undoToast" aria-live="polite" role="status" hidden>
+  <span id="undoMessage"></span>
+  <button id="undoButton" class="mini" type="button">undo</button>
+</div>
 <section id="library" aria-label="library">
   <div class="library-title">library</div>
   <div id="clipList"></div>
@@ -164,6 +175,11 @@
   const clipList = document.getElementById('clipList')
   const whisper = document.getElementById('whisper')
   const nodeLayer = document.getElementById('nodeLayer')
+  const undoToast = document.getElementById('undoToast')
+  const undoMessage = document.getElementById('undoMessage')
+  const undoButton = document.getElementById('undoButton')
+  let undoSnapshot = null
+  let undoTimer = null
   const form = document.getElementById('capture')
   const phrase = document.getElementById('phrase')
 
@@ -308,6 +324,34 @@
     window.setTimeout(() => whisper.classList.remove('visible'), 4000)
   }
 
+  function dismissUndo() {
+    window.clearTimeout(undoTimer)
+    undoTimer = null
+    undoSnapshot = null
+    undoToast.hidden = true
+  }
+
+  function captureUndo(message) {
+    undoSnapshot = R.captureNodes(state.nodes)
+    undoToast.hidden = false
+    undoMessage.textContent = message
+    window.clearTimeout(undoTimer)
+    undoTimer = window.setTimeout(dismissUndo, 6000)
+  }
+
+  function undoLastAction() {
+    if (!undoSnapshot) return
+    state.nodes = undoSnapshot
+    renderAllNodes()
+    R.saveNodes(state.nodes, localStorage)
+    dismissUndo()
+  }
+
+  function renderAllNodes() {
+    nodeLayer.replaceChildren()
+    for (const node of state.nodes) renderNode(node)
+  }
+
   function renderNode(node) {
     const element = document.createElement('div')
     element.className = 'node'
@@ -322,6 +366,7 @@
     remove.setAttribute('aria-label', 'delete idea')
     remove.addEventListener('click', event => {
       event.stopPropagation()
+      captureUndo('idea removed')
       state.nodes = R.removeNode(state.nodes, node.id)
       element.remove()
       R.saveNodes(state.nodes, localStorage)
@@ -339,8 +384,10 @@
   }
 
   function clearAllNodes() {
+    if (!state.nodes.length) return
+    captureUndo('ideas cleared')
     state.nodes = R.clearNodes()
-    nodeLayer.replaceChildren()
+    renderAllNodes()
     R.saveNodes(state.nodes, localStorage)
   }
 
@@ -393,11 +440,9 @@
 
   function restoreNodes() {
     const saved = R.loadNodes(localStorage)
-    for (const node of saved) {
-      state.sequence = Math.max(state.sequence, node.sequence + 1)
-      state.nodes.push(node)
-      renderNode(node)
-    }
+    state.nodes = saved
+    for (const node of saved) state.sequence = Math.max(state.sequence, node.sequence + 1)
+    renderAllNodes()
   }
 
   function drawLinks() {
@@ -725,6 +770,7 @@
   discardClipButton.addEventListener('click', discardPending)
   clipName.addEventListener('input', updateSaveState)
   document.getElementById('clearNodes').addEventListener('click', clearAllNodes)
+  undoButton.addEventListener('click', undoLastAction)
 
   window.addEventListener('keydown', event => {
     if (event.key === 'Enter' && event.target === clipName) {
