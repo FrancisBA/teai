@@ -110,3 +110,74 @@ test('test_ring_color_clamps_out_of_range', () => {
   assert.deepEqual(TeaiResonance.ringColor(-3), TeaiResonance.ringColor(0))
   assert.deepEqual(TeaiResonance.ringColor(4), TeaiResonance.ringColor(1))
 })
+
+test('test_remove_node_removes_only_the_matching_id_without_mutating', () => {
+  const nodes = [0, 1, 2].map(sequence => TeaiResonance.makeNode({
+    text: `idea ${sequence}`, score: 0.5, nowMs: sequence * 1000, sequence
+  }))
+  const snapshot = nodes.slice()
+  const result = TeaiResonance.removeNode(nodes, 'idea-1')
+  assert.deepEqual(result.map(node => node.id), ['idea-0', 'idea-2'])
+  assert.deepEqual(nodes, snapshot)
+})
+
+test('test_remove_node_with_unknown_id_leaves_nodes_unchanged', () => {
+  const node = TeaiResonance.makeNode({ text: 'idea', score: 0.5, nowMs: 1000, sequence: 0 })
+  assert.deepEqual(TeaiResonance.removeNode([node], 'missing'), [node])
+})
+
+test('test_clear_nodes_returns_a_new_empty_array', () => {
+  const first = TeaiResonance.clearNodes()
+  const second = TeaiResonance.clearNodes()
+  assert.deepEqual(first, [])
+  assert.notEqual(first, second)
+})
+
+test('test_move_node_clamps_coordinates_and_keeps_other_nodes', () => {
+  const nodes = [0, 1].map(sequence => TeaiResonance.makeNode({
+    text: `idea ${sequence}`, score: 0.5, nowMs: sequence * 1000, sequence
+  }))
+  const moved = TeaiResonance.moveNode(nodes, 'idea-1', 1.7, -0.4)
+  assert.equal(moved[1].x, 1)
+  assert.equal(moved[1].y, 0)
+  assert.deepEqual(moved[0], nodes[0])
+})
+
+test('test_move_node_uses_current_position_for_non_finite_input', () => {
+  const node = TeaiResonance.makeNode({ text: 'idea', score: 0.5, nowMs: 1000, sequence: 2 })
+  const moved = TeaiResonance.moveNode([node], node.id, NaN, undefined)
+  assert.equal(moved[0].x, node.x)
+  assert.equal(moved[0].y, node.y)
+  assert.ok(Number.isFinite(moved[0].x) && Number.isFinite(moved[0].y))
+})
+
+test('test_move_node_with_unknown_id_leaves_nodes_unchanged', () => {
+  const node = TeaiResonance.makeNode({ text: 'idea', score: 0.5, nowMs: 1000, sequence: 0 })
+  assert.deepEqual(TeaiResonance.moveNode([node], 'missing', 0.2, 0.3), [node])
+})
+
+test('test_node_hue_is_stable_distinct_and_in_range', () => {
+  const hues = Array.from({ length: 360 }, (_, sequence) => TeaiResonance.nodeHue(sequence))
+  assert.ok(hues.every(hue => Number.isInteger(hue) && hue >= 0 && hue < 360))
+  assert.equal(new Set(hues).size, 360)
+  assert.equal(TeaiResonance.nodeHue(-1), TeaiResonance.nodeHue(359))
+})
+
+test('test_capture_nodes_returns_a_new_array_and_new_node_objects', () => {
+  const nodes = [0, 1].map(sequence => TeaiResonance.makeNode({
+    text: `idea ${sequence}`, score: 0.5, nowMs: sequence * 1000, sequence
+  }))
+  const snapshot = TeaiResonance.captureNodes(nodes)
+  assert.notEqual(snapshot, nodes)
+  assert.notEqual(snapshot[0], nodes[0])
+  assert.deepEqual(snapshot, nodes)
+  snapshot[0].x = 0.9
+  assert.notEqual(nodes[0].x, 0.9)
+})
+
+test('test_capture_nodes_of_empty_array_returns_a_new_empty_array', () => {
+  const empty = []
+  const snapshot = TeaiResonance.captureNodes(empty)
+  assert.deepEqual(snapshot, [])
+  assert.notEqual(snapshot, empty)
+})
